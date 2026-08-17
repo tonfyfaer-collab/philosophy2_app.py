@@ -51,7 +51,7 @@ if st.button("🔍 사주 명식 뽑기"):
             conn_saju = st.connection("gsheets", type=GSheetsConnection)
             
             # 💡 [수정 포인트 1] 복사해오신 'saju_data' 탭의 전체 주소를 아래 따옴표 안에 넣어주세요!
-            sheet_url_saju = "https://docs.google.com/spreadsheets/d/1rjTfdxEVcGv4WgGaIy_RoWK23S90fnu6VyGdGp9Y_-4/edit#gid=여기에숫자"
+            sheet_url_saju = "https://docs.google.com/spreadsheets/d/1Fn-s98Yn1aJYRMy0_kbE0id4gDwMqkOD008qNsS3vyk/edit?gid=0#gid=0"
             
             # 💡 [수정 포인트 2] worksheet 파라미터를 아예 빼버립니다. (주소에 이미 gid가 있어서 확실하게 찾아갑니다)
             df_saju = conn_saju.read(spreadsheet=sheet_url_saju, ttl=0)
