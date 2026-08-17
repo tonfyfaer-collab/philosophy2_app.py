@@ -3,11 +3,10 @@ import pandas as pd
 from datetime import datetime
 
 # ==========================================
-# 1. 페이지 설정
+# 1. 페이지 설정 및 VIP 출입 통제
 # ==========================================
 st.set_page_config(page_title="재화의 프라이빗 사주 관제탑", layout="centered", page_icon="☯️")
 
-# VIP 비밀번호 출입문
 st.title("🔒 철학 관제탑 출입 통제소")
 pwd_input = st.text_input("접근 권한이 필요합니다. 비밀번호를 입력하세요:", type="password")
 
@@ -16,21 +15,23 @@ if pwd_input != "1234":
     st.stop()
 
 st.divider()
-st.title("☯️ 사주 명식 및 맞춤형 코칭 관제탑")
-st.subheader("사주 8글자 원국 분석 및 Saju_Rules 실천 비책 스캐너")
+st.title("☯️ 사주 명식 및 연도별 자동 운세 관제탑")
+st.subheader("사주 8글자 원국 도출 및 연도별 실천 비책(Action Guide) 자동 분석")
 
 CHEONGAN_LIST = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
 JIJI_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
 HANJA_CHEONGAN = {"갑": "甲", "을": "乙", "병": "丙", "정": "丁", "무": "戊", "기": "己", "경": "庚", "신": "辛", "임": "壬", "계": "癸"}
 
-# 22개 글자 전체 목록 (한글 + 한자 표기)
-ALL_TARGET_WORDS = [
-    "甲 (갑목)", "乙 (을목)", "丙 (병화)", "丁 (정화)", "戊 (무토)", 
-    "己 (기토)", "庚 (경금)", "辛 (신금)", "壬 (임수)", "癸 (계수)",
-    "子 (자수)", "丑 (축토)", "寅 (인목)", "卯 (묘목)", "辰 (진토)", 
-    "巳 (사화)", "午 (오화)", "未 (미토)", "申 (신금)", "酉 (유금)", 
-    "戌 (술토)", "亥 (해수)"
-]
+# 연도별 세운 간지 매핑 데이터베이스
+YEAR_GANJI = {
+    2024: {"ganji": "갑진(甲辰)년", "stem": "甲", "branch": "辰"},
+    2025: {"ganji": "을사(乙巳)년", "stem": "乙", "branch": "巳"},
+    2026: {"ganji": "병오(丙午)년", "stem": "丙", "branch": "午"},
+    2027: {"ganji": "정미(丁未)년", "stem": "丁", "branch": "未"},
+    2028: {"ganji": "무신(戊申)년", "stem": "戊", "branch": "申"},
+    2029: {"ganji": "기유(己酉)년", "stem": "己", "branch": "酉"},
+    2030: {"ganji": "경술(庚戌)년", "stem": "庚", "branch": "戌"}
+}
 
 @st.cache_data(ttl=600)
 def load_manse_db():
@@ -53,7 +54,7 @@ if 'saju_calculated' not in st.session_state:
 if 'saju_data' not in st.session_state:
     st.session_state.saju_data = {}
 
-# 입력 인터페이스
+# 1. 입력 인터페이스
 col1, col2, col3 = st.columns(3)
 with col1:
     cal_type = st.selectbox("달력 기준", ["양력", "음력"])
@@ -68,7 +69,7 @@ with col3:
     birth_time = st.selectbox("태어난 시간", time_options)
 
 if st.button("🔍 사주 명식 및 운세 분석 시작"):
-    with st.spinner("데이터를 조회 중입니다..."):
+    with st.spinner("만세력 데이터를 조회 중입니다..."):
         try:
             df_saju = load_manse_db()
             target_date_str = birth_date.strftime("%Y-%m-%d")
@@ -112,6 +113,9 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
         except Exception as e:
             st.error(f"만세력 로딩 오류: {e}")
 
+# ==========================================
+# 2. 결과 출력 및 연도별 자동 운세 분석
+# ==========================================
 if st.session_state.saju_calculated:
     sdata = st.session_state.saju_data
     
@@ -138,59 +142,80 @@ if st.session_state.saju_calculated:
     
     st.divider()
 
-    st.subheader("🔮 시점별(세운/월운) 맞춤형 실천 비책 (Action Guide)")
+    # ==========================================
+    # 🌟 연도별 전자동 운세 분석 코칭 시스템
+    # ==========================================
+    st.subheader("🔮 연도별(세운) 전자동 운세 및 실천 비책 (Action Guide)")
     
     my_hangul = sdata['day_stem_hangul']
     my_hanja = sdata['day_stem_hanja']
     
-    st.markdown(f"👤 **분석 대상 본인(일간):** `{my_hangul} ({my_hanja}金)`")
+    st.markdown(f"👤 **분석 대상 일간(나의 본원):** `{my_hangul} ({my_hanja}金)`")
     
     try:
         df_rules = load_rules_db()
         
-        # 1. 사용자가 명확하게 읽을 수 있는 드롭다운 목록 제공
-        st.markdown("##### 🎯 분석하고 싶은 운(세운/월운)의 글자를 선택하세요:")
-        
-        # 2026년 丙(병화) 위치인 index=2 기본 선택
-        selected_label = st.selectbox(
-            "운의 글자 선택",
-            options=ALL_TARGET_WORDS,
+        # 사용자가 연도만 고르면 시스템이 자동 연산!
+        year_options = [f"{y}년 - {info['ganji']}" for y, info in YEAR_GANJI.items()]
+        # 기본 선택을 2026년(index=2)으로 자동 설정
+        selected_year_label = st.selectbox(
+            "📅 운세를 분석할 연도를 선택하세요 (시스템이 천간/지지를 자동 분석합니다):",
+            options=year_options,
             index=2,
-            key="target_word_selector"
+            key="auto_year_selector"
         )
         
-        # 선택된 라벨에서 순수 한자/한글 키워드 추출 (예: '丙')
-        target_char = selected_label.split()[0]
+        selected_year_num = int(selected_year_label.split("년")[0])
+        year_info = YEAR_GANJI[selected_year_num]
         
-        # Daymaster와 Target_Word 매칭 쿼리
-        matched_rows = df_rules[
+        stem_char = year_info['stem']     # 천간 (예: 丙)
+        branch_char = year_info['branch'] # 지지 (예: 午)
+        
+        # 1. 천간(하늘의 운) 규칙 조회
+        rule_stem = df_rules[
             (df_rules['Daymaster'].str.contains(my_hanja, na=False) | df_rules['Daymaster'].str.contains(my_hangul, na=False)) &
-            (df_rules['Target_Word'].str.contains(target_char, na=False))
+            (df_rules['Target_Word'].str.contains(stem_char, na=False))
         ]
         
-        if not matched_rows.empty:
-            matched = matched_rows.iloc[0]
-            grade = matched['Fortune_Grade']
-            sipsin = matched['Sipsin_Relation']
-            core_desc = matched['Core_Interpretation']
-            action_desc = matched['Action_Guide']
-            
-            st.markdown(f"""
-            <div style="background-color: #2e3440; padding: 18px; border-radius: 10px; border-left: 6px solid #88c0d0; margin: 15px 0;">
-                <b style="font-size: 18px; color: #ECEFF4;">[시점 분석 요약]</b><br>
-                • 내 일간 <b>{my_hangul}({my_hanja})</b>이 운에서 <b>{selected_label}</b> 기운을 만났을 때 ➔ <span style="color: #81a1c1; font-weight: bold;">{sipsin}</span> 작용 발생<br>
-                • 해당 시기 길흉 등급: <span style="color: #ebcb8b; font-weight: bold; font-size: 17px;">{grade}</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("#### 📖 1. 핵심 심리 및 환경 변화")
-            st.info(core_desc)
-            
-            st.markdown("#### 🎯 2. 상황별 구체적 행동 전략 비책")
-            st.success(f"**[Action Guide - 실천 행동 지침]**\n\n{action_desc}")
-            
-        else:
-            st.warning(f"일간 '{my_hangul}({my_hanja})'과 글자 '{target_char}'에 대한 매칭 규칙을 찾지 못했습니다. (시트의 Daymaster 및 Target_Word 값 확인 필요)")
-            
+        # 2. 지지(땅의 환경) 규칙 조회
+        rule_branch = df_rules[
+            (df_rules['Daymaster'].str.contains(my_hanja, na=False) | df_rules['Daymaster'].str.contains(my_hangul, na=False)) &
+            (df_rules['Target_Word'].str.contains(branch_char, na=False))
+        ]
+        
+        st.markdown(f"### 🚩 {selected_year_num}년 {year_info['ganji']} 총합 운세 리포트")
+        
+        tab1, tab2 = st.tabs(["🌤️ 1. 하늘의 기운 (명예·사회적 목표)", "🌍 2. 땅의 환경 (현실·활동 영역)"])
+        
+        with tab1:
+            if not rule_stem.empty:
+                r_s = rule_stem.iloc[0]
+                st.markdown(f"""
+                <div style="background-color: #2e3440; padding: 16px; border-radius: 10px; border-left: 6px solid #88c0d0; margin-bottom: 12px;">
+                    <b>[천간 작용]</b> {stem_char} 기운과 조우 ➔ <b>{r_s['Sipsin_Relation']}</b> 작용 발생 | <b>길흉:</b> <span style="color:#ebcb8b;">{r_s['Fortune_Grade']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("##### 📖 핵심 심리 및 환경 변화")
+                st.info(r_s['Core_Interpretation'])
+                st.markdown("##### 🎯 실행해야 할 행동 전략 비책")
+                st.success(f"**[Action Guide]:**\n\n{r_s['Action_Guide']}")
+            else:
+                st.warning("천간 규칙 데이터를 찾을 수 없습니다.")
+                
+        with tab2:
+            if not rule_branch.empty:
+                r_b = rule_branch.iloc[0]
+                st.markdown(f"""
+                <div style="background-color: #2e3440; padding: 16px; border-radius: 10px; border-left: 6px solid #a3be8c; margin-bottom: 12px;">
+                    <b>[지지 작용]</b> {branch_char} 기운과 조우 ➔ <b>{r_b['Sipsin_Relation']}</b> 작용 발생 | <b>길흉:</b> <span style="color:#ebcb8b;">{r_b['Fortune_Grade']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("##### 📖 현실적 환경 변화 해설")
+                st.info(r_b['Core_Interpretation'])
+                st.markdown("##### 🎯 현실 기반 행동 전략 비책")
+                st.success(f"**[Action Guide]:**\n\n{r_b['Action_Guide']}")
+            else:
+                st.warning("지지 규칙 데이터를 찾을 수 없습니다.")
+                
     except Exception as e:
-        st.error(f"Saju_Rules 데이터 조회 오류: {e}")
+        st.error(f"운세 데이터 자동 매칭 중 오류 발생: {e}")
