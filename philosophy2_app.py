@@ -47,12 +47,18 @@ with col3:
 if st.button("🔍 사주 명식 뽑기"):
     with st.spinner("만세력 데이터베이스를 검색 중입니다..."):
         try:
-            # 구글 시트 연결 (방금 만든 saju_data 탭 지정)
+            # 구글 시트 연결
             conn_saju = st.connection("gsheets", type=GSheetsConnection)
-            sheet_url_saju = "https://docs.google.com/spreadsheets/d/1rjTfdxEVcGv4WgGaIy_RoWK23S90fnu6VyGdGp9Y_-4/edit?usp=sharing"
             
-            # saju_data 탭을 명시적으로 불러옵니다.
-            df_saju = conn_saju.read(spreadsheet=sheet_url_saju, worksheet="saju_data", ttl=0)
+            # 💡 [수정 포인트 1] 복사해오신 'saju_data' 탭의 전체 주소를 아래 따옴표 안에 넣어주세요!
+            sheet_url_saju = "https://docs.google.com/spreadsheets/d/1rjTfdxEVcGv4WgGaIy_RoWK23S90fnu6VyGdGp9Y_-4/edit#gid=여기에숫자"
+            
+            # 💡 [수정 포인트 2] worksheet 파라미터를 아예 빼버립니다. (주소에 이미 gid가 있어서 확실하게 찾아갑니다)
+            df_saju = conn_saju.read(spreadsheet=sheet_url_saju, ttl=0)
+            
+            # 💡 [수정 포인트 3] 판다스(Pandas)가 날짜를 멋대로 숫자로 바꾸지 않도록 문자로 꽉 묶어주는 안전장치
+            df_saju['양력'] = df_saju['양력'].astype(str)
+            df_saju['음력'] = df_saju['음력'].astype(str)
             
             # 날짜 포맷 맞추기
             target_date_str = birth_date.strftime("%Y-%m-%d")
