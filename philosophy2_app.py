@@ -2,14 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# ==========================================
 # 1. 페이지 설정
-# ==========================================
 st.set_page_config(page_title="재화의 프라이빗 사주 관제탑", layout="centered", page_icon="☯️")
 
-# ==========================================
-# 🔒 VIP 전용 비밀번호 출입 통제소
-# ==========================================
+# VIP 비밀번호 출입문
 st.title("🔒 철학 관제탑 출입 통제소")
 pwd_input = st.text_input("접근 권한이 필요합니다. 비밀번호를 입력하세요:", type="password")
 
@@ -21,16 +17,10 @@ st.divider()
 st.title("☯️ 사주 명식 및 맞춤형 코칭 관제탑")
 st.subheader("사주 8글자 원국 분석 및 Saju_Rules 실천 비책 스캐너")
 
-# ==========================================
-# 📚 기본 명리 사전 데이터
-# ==========================================
 CHEONGAN_LIST = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
 JIJI_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
 HANJA_CHEONGAN = {"갑": "甲", "을": "乙", "병": "丙", "정": "丁", "무": "戊", "기": "己", "경": "庚", "신": "辛", "임": "壬", "계": "癸"}
 
-# ==========================================
-# ⚡ 데이터베이스 로더 (캐싱 적용)
-# ==========================================
 @st.cache_data(ttl=600)
 def load_manse_db():
     manse_url = "https://docs.google.com/spreadsheets/d/1Fn-s98Yn1aJYRMy0_kbE0id4gDwMqkOD008qNsS3vyk/export?format=csv&gid=0"
@@ -47,15 +37,12 @@ def load_rules_db():
     df['Target_Word'] = df['Target_Word'].astype(str).str.strip()
     return df
 
-# 세션 상태 초기화 (화면 유지용)
 if 'saju_calculated' not in st.session_state:
     st.session_state.saju_calculated = False
 if 'saju_data' not in st.session_state:
     st.session_state.saju_data = {}
 
-# ==========================================
-# 2. 사용자 입력 인터페이스
-# ==========================================
+# 입력창
 col1, col2, col3 = st.columns(3)
 with col1:
     cal_type = st.selectbox("달력 기준", ["양력", "음력"])
@@ -69,9 +56,8 @@ with col3:
     ]
     birth_time = st.selectbox("태어난 시간", time_options)
 
-# 실행 버튼
 if st.button("🔍 사주 명식 및 운세 분석 시작"):
-    with st.spinner("만세력 데이터를 조회 중입니다..."):
+    with st.spinner("데이터를 조회 중입니다..."):
         try:
             df_saju = load_manse_db()
             target_date_str = birth_date.strftime("%Y-%m-%d")
@@ -87,7 +73,6 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                 month_p = saju_row['월주']
                 day_p = saju_row['일주']
                 
-                # 시주 계산 (시두법)
                 time_p = "모름"
                 if birth_time != "모름 (시주 제외)":
                     day_stem = day_p[0]
@@ -101,7 +86,6 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                     except:
                         time_p = "계산 오류"
 
-                # 세션에 결과 저장 (새로고침 방어)
                 st.session_state.saju_data = {
                     "year": year_p,
                     "month": month_p,
@@ -117,9 +101,6 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
         except Exception as e:
             st.error(f"만세력 로딩 오류: {e}")
 
-# ==========================================
-# 3. 분석 결과 출력 (세션 유지 상태일 때 상시 렌더링)
-# ==========================================
 if st.session_state.saju_calculated:
     sdata = st.session_state.saju_data
     
@@ -146,28 +127,21 @@ if st.session_state.saju_calculated:
     
     st.divider()
 
-    # ==========================================
-    # 4. Saju_Rules DB 실시간 연동 코칭
-    # ==========================================
-    st.subheader("🔮 특정 시점(세운/월운) 맞춤형 실천 비책 (Action Guide)")
+    st.subheader("🔮 시점별(세운/월운) 맞춤형 실천 비책 (Action Guide)")
     
     my_hangul = sdata['day_stem_hangul']
     my_hanja = sdata['day_stem_hanja']
     
-    st.markdown(f"👤 **분석 대상 일간(나의 본원):** `{my_hangul} ({my_hanja})`")
+    st.markdown(f"👤 **분석 대상 본인(일간):** `{my_hangul} ({my_hanja}金)`")
     
     try:
         df_rules = load_rules_db()
         
-        # 일간에 해당하는 22가지 규칙 필터링
         user_rules = df_rules[df_rules['Daymaster'].str.contains(my_hanja, na=False) | 
                               df_rules['Daymaster'].str.contains(my_hangul, na=False)]
         
         if not user_rules.empty:
             target_list = user_rules['Target_Word'].tolist()
-            
-            # 다크 모드에서도 글자가 시원하게 보이도록 라디오 버튼(가로 정렬) 구성
-            st.markdown("##### 🎯 분석하고자 하는 운(세운/월운)의 글자를 선택하세요:")
             
             # 2026년 병(丙) 기본 선택
             default_index = 0
@@ -175,16 +149,15 @@ if st.session_state.saju_calculated:
                 if "병" in t or "丙" in t:
                     default_index = idx
                     break
-                    
-            selected_target = st.radio(
-                "글자 선택",
+            
+            # 글자가 선명하게 보이도록 selectbox 적용
+            selected_target = st.selectbox(
+                "🎯 분석하고 싶은 운의 글자(10천간 / 12지지)를 선택하세요:",
                 options=target_list,
                 index=default_index,
-                horizontal=True,
-                label_visibility="collapsed"
+                key="selected_target_word"
             )
             
-            # 선택된 데이터 추출
             matched = user_rules[user_rules['Target_Word'] == selected_target].iloc[0]
             grade = matched['Fortune_Grade']
             sipsin = matched['Sipsin_Relation']
@@ -192,19 +165,19 @@ if st.session_state.saju_calculated:
             st.markdown(f"""
             <div style="background-color: #2e3440; padding: 16px; border-radius: 10px; border-left: 6px solid #88c0d0; margin: 15px 0;">
                 <b style="font-size: 17px; color: #ECEFF4;">[시점 분석 요약]</b><br>
-                • 내 일간 <b>{my_hangul}({my_hanja})</b>이 운에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <span style="color: #81a1c1; font-weight: bold;">{sipsin}</span> 작용<br>
-                • 시기 길흉 등급: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
+                • 내 일간 <b>{my_hangul}({my_hanja})</b>이 운에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <span style="color: #81a1c1; font-weight: bold;">{sipsin}</span> 작용 발생<br>
+                • 해당 시기 길흉 평가: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("#### 📖 1. 해당 시점의 핵심 심리 및 환경 변화")
+            st.markdown("#### 📖 1. 핵심 심리 및 환경 변화")
             st.info(matched['Core_Interpretation'])
             
             st.markdown("#### 🎯 2. 상황별 구체적 행동 전략 비책")
             st.success(f"**[Action Guide - 실천 행동 지침]**\n\n{matched['Action_Guide']}")
             
         else:
-            st.warning(f"일간 '{my_hangul}'에 해당하는 규칙을 Saju_Rules 시트에서 찾지 못했습니다.")
+            st.warning(f"일간 '{my_hangul}'에 해당하는 데이터를 찾지 못했습니다.")
             
     except Exception as e:
-        st.error(f"Saju_Rules 데이터 조회 중 오류: {e}")
+        st.error(f"Saju_Rules 데이터 조회 오류: {e}")
