@@ -47,16 +47,14 @@ with col3:
 if st.button("🔍 사주 명식 뽑기"):
     with st.spinner("만세력 데이터베이스를 검색 중입니다..."):
         try:
-            # 구글 시트 연결
-            conn_saju = st.connection("gsheets", type=GSheetsConnection)
+            # 💡 [필승 치트키] 복잡한 Connection 라이브러리 대신, 구글 시트의 데이터를 직접 가져옵니다.
+            # edit?gid=0 부분을 export?format=csv&gid=0 으로 바꾸면 파이썬이 즉시 읽을 수 있습니다!
+            csv_url = "https://docs.google.com/spreadsheets/d/1Fn-s98Yn1aJYRMy0_kbE0id4gDwMqkOD008qNsS3vyk/export?format=csv&gid=0"
             
-            # 💡 [수정 포인트 1] 복사해오신 'saju_data' 탭의 전체 주소를 아래 따옴표 안에 넣어주세요!
-            sheet_url_saju = "https://docs.google.com/spreadsheets/d/1Fn-s98Yn1aJYRMy0_kbE0id4gDwMqkOD008qNsS3vyk/edit?gid=0#gid=0"
+            # Pandas로 0.1초만에 다이렉트로 읽어오기
+            df_saju = pd.read_csv(csv_url)
             
-            # 💡 [수정 포인트 2] worksheet 파라미터를 아예 빼버립니다. (주소에 이미 gid가 있어서 확실하게 찾아갑니다)
-            df_saju = conn_saju.read(spreadsheet=sheet_url_saju, ttl=0)
-            
-            # 💡 [수정 포인트 3] 판다스(Pandas)가 날짜를 멋대로 숫자로 바꾸지 않도록 문자로 꽉 묶어주는 안전장치
+            # 날짜 데이터 문자열 변환 (안전장치)
             df_saju['양력'] = df_saju['양력'].astype(str)
             df_saju['음력'] = df_saju['음력'].astype(str)
             
