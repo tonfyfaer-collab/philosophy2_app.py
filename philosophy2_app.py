@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+# ==========================================
 # 1. 페이지 설정
+# ==========================================
 st.set_page_config(page_title="재화의 프라이빗 사주 관제탑", layout="centered", page_icon="☯️")
 
 # VIP 비밀번호 출입문
@@ -20,6 +22,15 @@ st.subheader("사주 8글자 원국 분석 및 Saju_Rules 실천 비책 스캐�
 CHEONGAN_LIST = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
 JIJI_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
 HANJA_CHEONGAN = {"갑": "甲", "을": "乙", "병": "丙", "정": "丁", "무": "戊", "기": "己", "경": "庚", "신": "辛", "임": "壬", "계": "癸"}
+
+# 22개 글자 전체 목록 (한글 + 한자 표기)
+ALL_TARGET_WORDS = [
+    "甲 (갑목)", "乙 (을목)", "丙 (병화)", "丁 (정화)", "戊 (무토)", 
+    "己 (기토)", "庚 (경금)", "辛 (신금)", "壬 (임수)", "癸 (계수)",
+    "子 (자수)", "丑 (축토)", "寅 (인목)", "卯 (묘목)", "辰 (진토)", 
+    "巳 (사화)", "午 (오화)", "未 (미토)", "申 (신금)", "酉 (유금)", 
+    "戌 (술토)", "亥 (해수)"
+]
 
 @st.cache_data(ttl=600)
 def load_manse_db():
@@ -42,7 +53,7 @@ if 'saju_calculated' not in st.session_state:
 if 'saju_data' not in st.session_state:
     st.session_state.saju_data = {}
 
-# 입력창
+# 입력 인터페이스
 col1, col2, col3 = st.columns(3)
 with col1:
     cal_type = st.selectbox("달력 기준", ["양력", "음력"])
@@ -137,47 +148,49 @@ if st.session_state.saju_calculated:
     try:
         df_rules = load_rules_db()
         
-        user_rules = df_rules[df_rules['Daymaster'].str.contains(my_hanja, na=False) | 
-                              df_rules['Daymaster'].str.contains(my_hangul, na=False)]
+        # 1. 사용자가 명확하게 읽을 수 있는 드롭다운 목록 제공
+        st.markdown("##### 🎯 분석하고 싶은 운(세운/월운)의 글자를 선택하세요:")
         
-        if not user_rules.empty:
-            target_list = user_rules['Target_Word'].tolist()
-            
-            # 2026년 병(丙) 기본 선택
-            default_index = 0
-            for idx, t in enumerate(target_list):
-                if "병" in t or "丙" in t:
-                    default_index = idx
-                    break
-            
-            # 글자가 선명하게 보이도록 selectbox 적용
-            selected_target = st.selectbox(
-                "🎯 분석하고 싶은 운의 글자(10천간 / 12지지)를 선택하세요:",
-                options=target_list,
-                index=default_index,
-                key="selected_target_word"
-            )
-            
-            matched = user_rules[user_rules['Target_Word'] == selected_target].iloc[0]
+        # 2026년 丙(병화) 위치인 index=2 기본 선택
+        selected_label = st.selectbox(
+            "운의 글자 선택",
+            options=ALL_TARGET_WORDS,
+            index=2,
+            key="target_word_selector"
+        )
+        
+        # 선택된 라벨에서 순수 한자/한글 키워드 추출 (예: '丙')
+        target_char = selected_label.split()[0]
+        
+        # Daymaster와 Target_Word 매칭 쿼리
+        matched_rows = df_rules[
+            (df_rules['Daymaster'].str.contains(my_hanja, na=False) | df_rules['Daymaster'].str.contains(my_hangul, na=False)) &
+            (df_rules['Target_Word'].str.contains(target_char, na=False))
+        ]
+        
+        if not matched_rows.empty:
+            matched = matched_rows.iloc[0]
             grade = matched['Fortune_Grade']
             sipsin = matched['Sipsin_Relation']
+            core_desc = matched['Core_Interpretation']
+            action_desc = matched['Action_Guide']
             
             st.markdown(f"""
-            <div style="background-color: #2e3440; padding: 16px; border-radius: 10px; border-left: 6px solid #88c0d0; margin: 15px 0;">
-                <b style="font-size: 17px; color: #ECEFF4;">[시점 분석 요약]</b><br>
-                • 내 일간 <b>{my_hangul}({my_hanja})</b>이 운에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <span style="color: #81a1c1; font-weight: bold;">{sipsin}</span> 작용 발생<br>
-                • 해당 시기 길흉 평가: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
+            <div style="background-color: #2e3440; padding: 18px; border-radius: 10px; border-left: 6px solid #88c0d0; margin: 15px 0;">
+                <b style="font-size: 18px; color: #ECEFF4;">[시점 분석 요약]</b><br>
+                • 내 일간 <b>{my_hangul}({my_hanja})</b>이 운에서 <b>{selected_label}</b> 기운을 만났을 때 ➔ <span style="color: #81a1c1; font-weight: bold;">{sipsin}</span> 작용 발생<br>
+                • 해당 시기 길흉 등급: <span style="color: #ebcb8b; font-weight: bold; font-size: 17px;">{grade}</span>
             </div>
             """, unsafe_allow_html=True)
             
             st.markdown("#### 📖 1. 핵심 심리 및 환경 변화")
-            st.info(matched['Core_Interpretation'])
+            st.info(core_desc)
             
             st.markdown("#### 🎯 2. 상황별 구체적 행동 전략 비책")
-            st.success(f"**[Action Guide - 실천 행동 지침]**\n\n{matched['Action_Guide']}")
+            st.success(f"**[Action Guide - 실천 행동 지침]**\n\n{action_desc}")
             
         else:
-            st.warning(f"일간 '{my_hangul}'에 해당하는 데이터를 찾지 못했습니다.")
+            st.warning(f"일간 '{my_hangul}({my_hanja})'과 글자 '{target_char}'에 대한 매칭 규칙을 찾지 못했습니다. (시트의 Daymaster 및 Target_Word 값 확인 필요)")
             
     except Exception as e:
         st.error(f"Saju_Rules 데이터 조회 오류: {e}")
