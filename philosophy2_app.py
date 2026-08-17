@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# ==========================================
-# 1. 페이지 설정 및 비밀번호 통과소
-# ==========================================
 st.set_page_config(page_title="재화의 프라이빗 사주 관제탑", layout="centered", page_icon="☯️")
 
 st.title("🔒 철학 관제탑 출입 통제소")
@@ -18,12 +15,10 @@ st.divider()
 st.title("☯️ 사주 명식 및 맞춤형 코칭 관제탑")
 st.subheader("사주 8글자 원국 분석 및 Saju_Rules 실천 비책 스캐너")
 
-# 한글 / 한자 사전
 CHEONGAN_LIST = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"]
 JIJI_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"]
 HANJA_CHEONGAN = {"갑": "甲", "을": "乙", "병": "丙", "정": "丁", "무": "戊", "기": "己", "경": "庚", "신": "辛", "임": "壬", "계": "癸"}
 
-# 데이터 캐싱 로더
 @st.cache_data(ttl=600)
 def load_manse_db():
     manse_url = "https://docs.google.com/spreadsheets/d/1Fn-s98Yn1aJYRMy0_kbE0id4gDwMqkOD008qNsS3vyk/export?format=csv&gid=0"
@@ -40,7 +35,6 @@ def load_rules_db():
     df['Target_Word'] = df['Target_Word'].astype(str).str.strip()
     return df
 
-# 1. 입력 인터페이스
 col1, col2, col3 = st.columns(3)
 with col1:
     cal_type = st.selectbox("달력 기준", ["양력", "음력"])
@@ -54,7 +48,6 @@ with col3:
     ]
     birth_time = st.selectbox("태어난 시간", time_options)
 
-# 2. 실행 버튼
 if st.button("🔍 사주 명식 및 운세 분석 시작"):
     with st.spinner("데이터베이스를 정밀 대조 중입니다..."):
         try:
@@ -73,7 +66,6 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                 month_pillar = saju_row['월주']
                 day_pillar = saju_row['일주']
                 
-                # 시주 계산 (시두법)
                 time_pillar = "모름"
                 if birth_time != "모름 (시주 제외)":
                     day_stem = day_pillar[0]
@@ -87,7 +79,6 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                     except:
                         time_pillar = "계산 오류"
 
-                # 3. 사주 원국 8글자 출력
                 st.success("✅ 사주 원국 분석 완료!")
                 st.markdown(f"""
                 <div style="text-align: center; background-color: #1e1e2e; padding: 22px; border-radius: 12px; margin-bottom: 20px;">
@@ -111,11 +102,10 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                 
                 st.divider()
 
-                # 4. Saju_Rules 정밀 연동 코칭 시스템
                 st.subheader("🔮 특정 시점(세운/월운) 맞춤형 실천 비책 (Action Guide)")
                 
-                my_day_hangul = day_pillar[0] # 예: '경'
-                my_day_hanja = HANJA_CHEONGAN.get(my_day_hangul, my_day_hangul) # 예: '庚'
+                my_day_hangul = day_pillar[0] 
+                my_day_hanja = HANJA_CHEONGAN.get(my_day_hangul, my_day_hangul) 
                 
                 user_rules = df_rules[df_rules['Daymaster'].str.contains(my_day_hanja, na=False) | 
                                       df_rules['Daymaster'].str.contains(my_day_hangul, na=False)]
@@ -126,16 +116,20 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                     
                     target_options = user_rules['Target_Word'].unique().tolist()
                     
+                    # 2026년 병오년 기준 '병(丙)'을 기본값으로 정확히 조준
                     default_idx = 0
                     for i, t in enumerate(target_options):
-                        if "병" in t or "丙" in t or "정" in t or "丁" in t:
+                        if "병" in t or "丙" in t:
                             default_idx = i
                             break
-                            
+                    
+                    # 드롭박스 시인성 개선 및 명확한 안내
+                    st.markdown("##### 🎯 분석하고 싶은 상대 글자(시기)를 아래에서 선택하세요:")
                     selected_target = st.selectbox(
-                        "🎯 [시기 선택] 올해(세운)나 이달(월운)에 마주한 상대 글자를 선택하세요 (인생 전체가 아닌 '해당 시점'의 상호작용입니다):",
+                        "시기 선택 옵션 박스",
                         target_options,
-                        index=default_idx
+                        index=default_idx,
+                        label_visibility="collapsed" # 중복 레이블 숨김으로 깔끔하게 처리
                     )
                     
                     matched = user_rules[user_rules['Target_Word'] == selected_target].iloc[0]
@@ -145,8 +139,8 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                     
                     st.markdown(f"""
                     <div style="background-color: #2e3440; padding: 15px; border-radius: 8px; border-left: 5px solid #88c0d0; margin: 15px 0;">
-                        <b>[해당 시점 분석 요약]</b><br>
-                        • 내 일간 <b>{my_day_hangul}({my_day_hanja})</b>이 특정 시기(운)에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <b>{sipsin}</b> 작용 발생<br>
+                        <b>[선택한 시점 분석 요약]</b><br>
+                        • 내 일간 <b>{my_day_hangul}({my_day_hanja})</b>이 선택한 <b>{selected_target}</b> 기운을 만났을 때 ➔ <b>{sipsin}</b> 작용 발생<br>
                         • 해당 시점 길흉 평가: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
                     </div>
                     """, unsafe_allow_html=True)
