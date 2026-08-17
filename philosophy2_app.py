@@ -112,24 +112,20 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                 st.divider()
 
                 # 4. Saju_Rules 정밀 연동 코칭 시스템
-                st.subheader("🔮 맞춤형 운세 및 실천 비책 (Action Guide)")
+                st.subheader("🔮 특정 시점(세운/월운) 맞춤형 실천 비책 (Action Guide)")
                 
                 my_day_hangul = day_pillar[0] # 예: '경'
                 my_day_hanja = HANJA_CHEONGAN.get(my_day_hangul, my_day_hangul) # 예: '庚'
                 
-                # 사용자의 일간에 해당하는 규칙만 필터링
                 user_rules = df_rules[df_rules['Daymaster'].str.contains(my_day_hanja, na=False) | 
                                       df_rules['Daymaster'].str.contains(my_day_hangul, na=False)]
                 
                 if not user_rules.empty:
-                    # 명확한 안내 문구
-                    st.markdown(f"👤 **분석 대상 본인(일간):** `스스로를 상징하는 일주 천간 ➔ {my_day_hangul}({my_day_hanja})`")
+                    st.markdown(f"👤 **분석 대상 본인(일간):** `내 본원 ➔ {my_day_hangul}({my_day_hanja}) 금(金)의 기운`")
                     st.markdown("---")
                     
-                    # 사용자가 시트에서 '어떤 글자(세운/월운 등)를 조우했는지' 선택하는 드롭박스
                     target_options = user_rules['Target_Word'].unique().tolist()
                     
-                    # 기본값을 2026년 병오년의 '병(丙)' 또는 '정(丁)' 등으로 유연하게 설정
                     default_idx = 0
                     for i, t in enumerate(target_options):
                         if "병" in t or "丙" in t or "정" in t or "丁" in t:
@@ -137,12 +133,11 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                             break
                             
                     selected_target = st.selectbox(
-                        "🎯 [선택창] 올해(세운), 이달(월운), 또는 원국에서 분석하고 싶은 상대 글자를 선택하세요:",
+                        "🎯 [시기 선택] 올해(세운)나 이달(월운)에 마주한 상대 글자를 선택하세요 (인생 전체가 아닌 '해당 시점'의 상호작용입니다):",
                         target_options,
                         index=default_idx
                     )
                     
-                    # 선택된 데이터 추출
                     matched = user_rules[user_rules['Target_Word'] == selected_target].iloc[0]
                     
                     grade = matched['Fortune_Grade']
@@ -150,62 +145,20 @@ if st.button("🔍 사주 명식 및 운세 분석 시작"):
                     
                     st.markdown(f"""
                     <div style="background-color: #2e3440; padding: 15px; border-radius: 8px; border-left: 5px solid #88c0d0; margin: 15px 0;">
-                        <b>[분석 결과 요약]</b><br>
-                        • 내 일간 <b>{my_day_hangul}({my_day_hanja})</b>이 운에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <b>{sipsin}</b> 작용 발생<br>
-                        • 길흉 평가: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
+                        <b>[해당 시점 분석 요약]</b><br>
+                        • 내 일간 <b>{my_day_hangul}({my_day_hanja})</b>이 특정 시기(운)에서 <b>{selected_target}</b> 기운을 만났을 때 ➔ <b>{sipsin}</b> 작용 발생<br>
+                        • 해당 시점 길흉 평가: <span style="color: #ebcb8b; font-weight: bold;">{grade}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # 핵심 심리 및 환경 해설
-                    st.markdown("#### 📖 1. 핵심 심리 및 환경 변화 해설")
+                    st.markdown("#### 📖 1. 해당 시점의 핵심 심리 및 환경 변화")
                     st.info(matched['Core_Interpretation'])
                     
-                    # 구체적 실천 가이드 (Action Guide)
-                    st.markdown("#### 🎯 2. 상황별 구체적 행동 전략 비책")
-                    with st.expander("🚀 [클릭] 당장 실행해야 할 구체적 실천 가이드(Action Guide) 열어보기", expanded=True):
+                    st.markdown("#### 🎯 2. 해당 시점에 즉시 실행해야 할 행동 전략 비책")
+                    with st.expander("🚀 [클릭] 해당 시기(해/달)에 취해야 할 구체적 행동 지침(Action Guide) 열어보기", expanded=True):
                         st.success(f"**행동 지침:**\n\n{matched['Action_Guide']}")
                 else:
-                    st.warning(f"일간 '{my_day_hangul}'에 해당하는 규칙을 Saju_Rules 시트에서 찾지 못했습니다.")
-
-            # [위의 코드에서 '🔮 명리 분석 및 맞춤형 실천 비책' 부분을 아래로 교체하세요]
-
-                # ==========================================
-                # 5. 정통 명리학 기반 AI 통변 엔진 (RAG + Prompt Engineering)
-                # ==========================================
-                st.subheader("📜 정통 명리학 교전 기반 AI 분석 리포트")
-                
-                # 사주 원국 전체 데이터를 텍스트로 정리
-                saju_summary = f"""
-                - 연주: {year_pillar}
-                - 월주: {month_pillar}
-                - 일주: {day_pillar}
-                - 시주: {time_pillar}
-                """
-                
-                if st.button("⚖️ 자평진전/명리학 교전 기반 심층 통변 보기"):
-                    with st.spinner("선생님의 사주 원국을 명리학 교전 데이터와 대조 중입니다..."):
-                        # LLM에게 보낼 프롬프트 구성
-                        prompt = f"""
-                        당신은 30년 경력의 명리학자입니다. 아래 사용자의 사주를 정통 명리학(자평진전 격국론 등) 관점에서 분석하세요.
-                        
-                        [사용자 사주]
-                        {saju_summary}
-                        
-                        [분석 필수 포인트]
-                        1. '무딘 도끼(경금)가 많은 나무(목)를 만난 사주'라는 비유가 명리학적으로 어떤 구조(목다금결, 재다신약 등)를 의미하는지 설명할 것.
-                        2. 천간에 뜬 무토(戊土) 인성이 왜 이 사주의 '상신(구세주)'이 되는지 설명할 것.
-                        3. 이 사주를 '교육자(활인업)'의 길로 썼을 때 어떻게 상생으로 흐르는지 스토리텔링할 것.
-                        4. 톤앤매너: 신뢰감 있고, 따뜻하며, 전문적인 명리학자의 어조.
-                        """
-                        
-                        # 제미나이(LLM)를 통해 분석 생성
-                        # (Streamlit에서 st.chat_message 등을 사용하거나 직접 텍스트 생성)
-                        analysis = st.write_stream(st.generate_response(prompt)) # 선생님의 제미나이 환경에 맞춰 호출
-                        
-                        st.markdown("---")
-                        # 기존에 만드신 Saju_Rules DB(실천 가이드)와 연동하여 마무리
-                        st.write("위의 이론적 분석을 바탕으로, 현재 시점에 필요한 구체적인 행동 전략은 다음과 같습니다.")
-                        # ... (이후 기존의 실천 비책 버튼 코드 연결)
+                    st.warning(f"일간 '{my_day_hangul}'에 해당하는 규칙을 찾지 못했습니다.")
 
             else:
                 st.error("해당 날짜의 만세력 데이터를 찾을 수 없습니다.")
