@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 import streamlit as st
 
+st.set_page_config(layout="wide")
+
 # 2. 네이버페이 증권 데이터 요청
 url = "https://finance.naver.com/sise/sise_quant.naver?sosok=0"
 headers = {
