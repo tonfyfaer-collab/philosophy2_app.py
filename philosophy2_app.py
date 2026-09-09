@@ -25,8 +25,8 @@ def get_market_data(url):
     return df
 
 # 3. 코스피(0)와 코스닥(1) '거래대금 상위' 데이터 각각 수집
-df_kospi = get_market_data("https://finance.naver.com/sise/sise_quant_high.naver?sosok=0")
-df_kosdaq = get_market_data("https://finance.naver.com/sise/sise_quant_high.naver?sosok=1")
+df_kospi = get_market_data("https://finance.naver.com/sise/sise_quant.naver?sosok=0")
+df_kosdaq = get_market_data("https://finance.naver.com/sise/sise_quant.naver?sosok=1")
 
 # 4. 두 시장 데이터 병합
 df = pd.concat([df_kospi, df_kosdaq])
