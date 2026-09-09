@@ -53,7 +53,7 @@ res = requests.get(url, headers=headers)
 res.encoding = "euc-kr"
 
 # 2. HTML 내 테이블 추출
-tables = pd.read_html(res.text)
+tables = pd.read_html(io.StringIO(res.text))
 df = tables[1]  # 시세 데이터가 담긴 메인 테이블
 
 # 3. 결측치 제거 및 상위 20개 추출
