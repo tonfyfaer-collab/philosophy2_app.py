@@ -35,7 +35,9 @@ top20 = df[
     ]
 ].head(20)
 
-st.dataframe(top20, use_container_width=True)import pandas as pd
+st.dataframe(top20, use_container_width=True)
+
+import pandas as pd
 import requests
 
 # 1. 네이버페이 증권 거래량 상위 20 종목 수집 (KOSPI 기준)
