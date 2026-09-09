@@ -74,4 +74,4 @@ df = df[
 top20 = df.head(20).reset_index(drop=True)
 
 # 4. 결과 출력
-display(top20)
+st.dataframe(top20, use_container_width=True)
